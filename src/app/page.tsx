@@ -15,7 +15,7 @@ export default function LandingPage() {
           </div>
           <span className="text-xl font-bold">MailPulse</span>
         </div>
-        <Link href="/auth/login">
+        <Link href="/login">
           <Button variant="secondary" className="text-blue-600 hover:bg-white/90">
             Sign In
           </Button>
@@ -31,7 +31,7 @@ export default function LandingPage() {
           MailPulse transforms your inbox with intelligent categorization, sentiment analysis, and AI-powered insights. Work smarter, respond faster.
         </p>
         <div className="flex gap-4 justify-center mb-16">
-          <Link href="/auth/login">
+          <Link href="/login">
             <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 gap-2">
               Get Started
               <ArrowRight className="w-5 h-5" />
@@ -113,7 +113,7 @@ export default function LandingPage() {
         <p className="text-xl text-blue-100 mb-8">
           Join thousands of professionals using MailPulse to manage their email smarter.
         </p>
-        <Link href="/auth/login">
+        <Link href="/login">
           <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
             Start Free Trial
           </Button>
