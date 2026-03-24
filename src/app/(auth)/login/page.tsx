@@ -20,7 +20,7 @@ export default function LoginPage() {
   }
 
   const handleGoogleLogin = () => {
-    window.location.href = '/api/auth/callback'
+    window.location.href = '/api/auth/login'
   }
 
   return (
