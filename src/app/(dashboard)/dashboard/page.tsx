@@ -87,14 +87,16 @@ export default function DashboardPage() {
 
   const recentEmails = emails.slice(0, 5)
 
-  // Calculate average response time (time between consecutive emails in hours)
+  // Calculate average time between emails (absolute value, in hours)
   const avgResponseTime = emails.length > 1
-    ? emails.reduce((sum, email, i) => {
-        if (i === 0) return sum
-        const prevTime = new Date(emails[i - 1].timestamp).getTime()
-        const currTime = new Date(email.timestamp).getTime()
-        return sum + (currTime - prevTime)
-      }, 0) / (emails.length - 1) / (1000 * 60 * 60)
+    ? Math.abs(
+        emails.reduce((sum, email, i) => {
+          if (i === 0) return sum
+          const prevTime = new Date(emails[i - 1].timestamp).getTime()
+          const currTime = new Date(email.timestamp).getTime()
+          return sum + Math.abs(currTime - prevTime)
+        }, 0) / (emails.length - 1) / (1000 * 60 * 60)
+      )
     : 0
 
   // Calculate read rate (percentage of read emails)
