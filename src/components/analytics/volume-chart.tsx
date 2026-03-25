@@ -12,7 +12,13 @@ import {
 } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
+interface Email {
+  timestamp: string
+  labels?: string[]
+}
+
 interface VolumeChartProps {
+  emails?: Email[]
   data?: Array<{
     date: string
     sent: number
@@ -20,7 +26,9 @@ interface VolumeChartProps {
   }>
 }
 
-export function VolumeChart({ data }: VolumeChartProps) {
+const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+export function VolumeChart({ emails, data }: VolumeChartProps) {
   const defaultData = [
     { date: 'Mon', sent: 45, received: 89 },
     { date: 'Tue', sent: 52, received: 102 },
@@ -31,7 +39,38 @@ export function VolumeChart({ data }: VolumeChartProps) {
     { date: 'Sun', sent: 8, received: 22 },
   ]
 
-  const chartData = data || defaultData
+  // Compute volume data from emails if provided
+  let chartData = data || defaultData
+
+  if (emails && emails.length > 0) {
+    // Initialize volume counts for each day of the week
+    const volumeByDay: Record<string, { sent: number; received: number }> = {}
+    DAYS_OF_WEEK.forEach(day => {
+      volumeByDay[day] = { sent: 0, received: 0 }
+    })
+
+    // Group emails by day of week
+    emails.forEach(email => {
+      const date = new Date(email.timestamp)
+      const dayOfWeek = DAYS_OF_WEEK[date.getDay()]
+
+      // Determine if sent or received based on labels
+      const labels = email.labels || []
+      const isSent = labels.includes('SENT')
+
+      if (isSent) {
+        volumeByDay[dayOfWeek].sent++
+      } else {
+        volumeByDay[dayOfWeek].received++
+      }
+    })
+
+    chartData = DAYS_OF_WEEK.map(day => ({
+      date: day,
+      sent: volumeByDay[day].sent,
+      received: volumeByDay[day].received,
+    }))
+  }
 
   return (
     <Card>

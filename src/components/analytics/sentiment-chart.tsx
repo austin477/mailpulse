@@ -8,45 +8,63 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer, Cell,
+  ResponsiveContainer,
+  Cell,
 } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
-interface SentimentChartProps {
+interface Email {
+  isRead?: boolean
+  isStarred?: boolean
+}
+
+interface EmailStatusChartProps {
+  emails?: Email[]
   data?: Array<{
-    sentiment: string
+    status: string
     count: number
   }>
 }
 
-export function SentimentChart({ data }: SentimentChartProps) {
+export function SentimentChart({ emails, data }: EmailStatusChartProps) {
   const defaultData = [
-    { sentiment: 'Positive', count: 234 },
-    { sentiment: 'Neutral', count: 456 },
-    { sentiment: 'Negative', count: 89 },
-    { sentiment: 'Urgent', count: 67 },
+    { status: 'Read', count: 234 },
+    { status: 'Unread', count: 456 },
+    { status: 'Starred', count: 89 },
   ]
 
-  const chartData = data || defaultData
+  // Compute status data from emails if provided
+  let chartData = data || defaultData
+
+  if (emails && emails.length > 0) {
+    const readCount = emails.filter(e => e.isRead).length
+    const unreadCount = emails.filter(e => !e.isRead).length
+    const starredCount = emails.filter(e => e.isStarred).length
+
+    chartData = [
+      { status: 'Read', count: readCount },
+      { status: 'Unread', count: unreadCount },
+      { status: 'Starred', count: starredCount },
+    ]
+  }
 
   const colors: Record<string, string> = {
-    'Positive': '#10b981',
-    'Neutral': '#9ca3af',
-    'Negative': '#ef4444',
-    'Urgent': '#a855f7',
+    'Read': '#10b981',
+    'Unread': '#3b82f6',
+    'Starred': '#f59e0b',
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Sentiment Analysis</CardTitle>
-        <CardDescription>Email sentiment distribution</CardDescription>
+        <CardTitle>Email Status</CardTitle>
+        <CardDescription>Read, unread, and starred email counts</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="sentiment" stroke="#9ca3af" />
+            <XAxis dataKey="status" stroke="#9ca3af" />
             <YAxis stroke="#9ca3af" />
             <Tooltip
               contentStyle={{
@@ -59,7 +77,7 @@ export function SentimentChart({ data }: SentimentChartProps) {
               {chartData.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={colors[entry.sentiment] || '#3b82f6'}
+                  fill={colors[entry.status] || '#3b82f6'}
                 />
               ))}
             </Bar>

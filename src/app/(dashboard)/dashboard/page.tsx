@@ -19,6 +19,7 @@ interface EmailSummary {
   priority: string
   timestamp: string
   isRead: boolean
+  labels?: string[]
 }
 
 export default function DashboardPage() {
@@ -32,7 +33,7 @@ export default function DashboardPage() {
     async function fetchEmails() {
       try {
         setIsLoading(true)
-        const res = await fetch('/api/gmail/messages?max=10')
+        const res = await fetch('/api/gmail/messages?max=100')
 
         if (res.status === 401) {
           window.location.href = '/login'
@@ -86,6 +87,20 @@ export default function DashboardPage() {
 
   const recentEmails = emails.slice(0, 5)
 
+  // Calculate average response time (time between consecutive emails in hours)
+  const avgResponseTime = emails.length > 1
+    ? emails.reduce((sum, email, i) => {
+        if (i === 0) return sum
+        const prevTime = new Date(emails[i - 1].timestamp).getTime()
+        const currTime = new Date(email.timestamp).getTime()
+        return sum + (currTime - prevTime)
+      }, 0) / (emails.length - 1) / (1000 * 60 * 60)
+    : 0
+
+  // Calculate read rate (percentage of read emails)
+  const readEmails = emails.filter(e => e.isRead).length
+  const readRate = emails.length > 0 ? Math.round((readEmails / emails.length) * 100) : 0
+
   return (
     <div className="p-6 space-y-6">
       <div>
@@ -97,17 +112,17 @@ export default function DashboardPage() {
       <StatsCards
         totalEmails={totalEmails}
         unreadEmails={unreadCount}
-        avgResponseTime={0}
-        slaCompliance={0}
+        avgResponseTime={avgResponseTime}
+        readRate={readRate}
       />
 
       {/* Charts */}
       <div className="grid lg:grid-cols-2 gap-6">
-        <VolumeChart />
-        <CategoryBreakdown />
+        <VolumeChart emails={emails} />
+        <CategoryBreakdown emails={emails} />
       </div>
 
-      <SentimentChart />
+      <SentimentChart emails={emails} />
 
       {/* Priority Inbox */}
       <Card>

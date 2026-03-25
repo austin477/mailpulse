@@ -10,7 +10,12 @@ import {
 } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
+interface Email {
+  labels?: string[]
+}
+
 interface CategoryBreakdownProps {
+  emails?: Email[]
   data?: Array<{
     name: string
     value: number
@@ -19,7 +24,21 @@ interface CategoryBreakdownProps {
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f97316', '#ec4899']
 
-export function CategoryBreakdown({ data }: CategoryBreakdownProps) {
+// Gmail label to friendly name mapping
+const LABEL_MAP: Record<string, string> = {
+  'INBOX': 'Inbox',
+  'SENT': 'Sent',
+  'DRAFT': 'Draft',
+  'SPAM': 'Spam',
+  'TRASH': 'Trash',
+  'CATEGORY_PROMOTIONS': 'Promotions',
+  'CATEGORY_SOCIAL': 'Social',
+  'CATEGORY_UPDATES': 'Updates',
+  'CATEGORY_FORUMS': 'Forums',
+  'CATEGORY_PERSONAL': 'Personal',
+}
+
+export function CategoryBreakdown({ emails, data }: CategoryBreakdownProps) {
   const defaultData = [
     { name: 'Work', value: 245 },
     { name: 'Personal', value: 123 },
@@ -28,7 +47,37 @@ export function CategoryBreakdown({ data }: CategoryBreakdownProps) {
     { name: 'Other', value: 45 },
   ]
 
-  const chartData = data || defaultData
+  // Compute category data from emails if provided
+  let chartData = data || defaultData
+
+  if (emails && emails.length > 0) {
+    // Count emails by their Gmail labels
+    const categoryCount: Record<string, number> = {}
+
+    emails.forEach(email => {
+      const labels = email.labels || []
+
+      // Find the first label that matches our mapping
+      let found = false
+      for (const label of labels) {
+        if (LABEL_MAP[label]) {
+          categoryCount[LABEL_MAP[label]] = (categoryCount[LABEL_MAP[label]] || 0) + 1
+          found = true
+          break
+        }
+      }
+
+      // If no label matched, add to "Other"
+      if (!found) {
+        categoryCount['Other'] = (categoryCount['Other'] || 0) + 1
+      }
+    })
+
+    chartData = Object.entries(categoryCount)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5) // Show top 5
+  }
 
   return (
     <Card>

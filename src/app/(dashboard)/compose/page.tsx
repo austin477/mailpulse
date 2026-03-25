@@ -1,31 +1,106 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Send, Paperclip, Type, Smile } from 'lucide-react'
+import { Send, Paperclip, Type, Smile, AlertCircle, CheckCircle } from 'lucide-react'
 
 export default function ComposePage() {
+  const router = useRouter()
   const [to, setTo] = useState('')
   const [cc, setCc] = useState('')
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [isExpanded, setIsExpanded] = useState(false)
   const [isSending, setIsSending] = useState(false)
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {}
+
+    if (!to.trim()) {
+      newErrors.to = 'Recipient email is required'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim())) {
+      newErrors.to = 'Please enter a valid email address'
+    }
+
+    if (!subject.trim()) {
+      newErrors.subject = 'Subject is required'
+    }
+
+    if (!body.trim()) {
+      newErrors.body = 'Message body is required'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   const handleSend = async () => {
+    if (!validateForm()) {
+      return
+    }
+
     setIsSending(true)
-    setTimeout(() => {
+    setMessage(null)
+
+    try {
+      const response = await fetch('/api/gmail/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: to.trim(),
+          cc: cc.trim(),
+          subject: subject.trim(),
+          body: body.trim(),
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        setMessage({
+          type: 'error',
+          text: result.error || 'Failed to send email',
+        })
+        return
+      }
+
+      setMessage({
+        type: 'success',
+        text: 'Email sent successfully!',
+      })
+
+      // Reset form
+      setTimeout(() => {
+        setTo('')
+        setCc('')
+        setSubject('')
+        setBody('')
+        setIsExpanded(false)
+        setMessage(null)
+        router.push('/inbox')
+      }, 1500)
+    } catch (error) {
+      console.error('Send error:', error)
+      setMessage({
+        type: 'error',
+        text: 'An error occurred while sending the email',
+      })
+    } finally {
       setIsSending(false)
-      setTo('')
-      setCc('')
-      setSubject('')
-      setBody('')
-      setIsExpanded(false)
-    }, 1000)
+    }
+  }
+
+  const handleCancel = () => {
+    router.back()
   }
 
   return (
@@ -41,16 +116,49 @@ export default function ComposePage() {
           <CardDescription>Draft a professional email with AI suggestions</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Messages */}
+          {message && (
+            <div
+              className={`p-4 rounded-lg border flex items-start gap-3 ${
+                message.type === 'success'
+                  ? 'bg-green-50 border-green-200'
+                  : 'bg-red-50 border-red-200'
+              }`}
+            >
+              {message.type === 'success' ? (
+                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              )}
+              <p
+                className={`text-sm ${
+                  message.type === 'success' ? 'text-green-800' : 'text-red-800'
+                }`}
+              >
+                {message.text}
+              </p>
+            </div>
+          )}
+
           {/* Recipients */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              To
+              To <span className="text-red-500">*</span>
             </label>
             <Input
               placeholder="recipient@example.com"
               value={to}
-              onChange={(e) => setTo(e.target.value)}
+              onChange={(e) => {
+                setTo(e.target.value)
+                if (errors.to) {
+                  setErrors({ ...errors, to: '' })
+                }
+              }}
+              className={errors.to ? 'border-red-500' : ''}
             />
+            {errors.to && (
+              <p className="text-sm text-red-600 mt-1">{errors.to}</p>
+            )}
           </div>
 
           {isExpanded && (
@@ -89,26 +197,43 @@ export default function ComposePage() {
           {/* Subject */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Subject
+              Subject <span className="text-red-500">*</span>
             </label>
             <Input
               placeholder="Email subject"
               value={subject}
-              onChange={(e) => setSubject(e.target.value)}
+              onChange={(e) => {
+                setSubject(e.target.value)
+                if (errors.subject) {
+                  setErrors({ ...errors, subject: '' })
+                }
+              }}
+              className={errors.subject ? 'border-red-500' : ''}
             />
+            {errors.subject && (
+              <p className="text-sm text-red-600 mt-1">{errors.subject}</p>
+            )}
           </div>
 
           {/* Body */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Message
+              Message <span className="text-red-500">*</span>
             </label>
             <Textarea
               placeholder="Write your message here..."
               value={body}
-              onChange={(e) => setBody(e.target.value)}
-              className="min-h-96 resize-none"
+              onChange={(e) => {
+                setBody(e.target.value)
+                if (errors.body) {
+                  setErrors({ ...errors, body: '' })
+                }
+              }}
+              className={`min-h-96 resize-none ${errors.body ? 'border-red-500' : ''}`}
             />
+            {errors.body && (
+              <p className="text-sm text-red-600 mt-1">{errors.body}</p>
+            )}
           </div>
 
           {/* AI Suggestion */}
@@ -159,7 +284,7 @@ export default function ComposePage() {
             <Button variant="outline">
               Save Draft
             </Button>
-            <Button variant="ghost">
+            <Button variant="ghost" onClick={handleCancel}>
               Cancel
             </Button>
           </div>

@@ -10,6 +10,7 @@ import {
   Sparkles,
   CheckCircle2,
   MessageSquare,
+  Loader2,
 } from 'lucide-react'
 
 interface AIAnalysisPanelProps {
@@ -21,6 +22,8 @@ export function AIAnalysisPanel({ email }: AIAnalysisPanelProps) {
     new Set(['actionItems'])
   )
   const [suggestedReplyTone, setSuggestedReplyTone] = useState<'professional' | 'friendly' | 'concise' | 'detailed'>('professional')
+  const [suggestedReplyContent, setSuggestedReplyContent] = useState<string | null>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
 
   const toggleSection = (section: string) => {
     const next = new Set(expandedSections)
@@ -32,23 +35,48 @@ export function AIAnalysisPanel({ email }: AIAnalysisPanelProps) {
     setExpandedSections(next)
   }
 
-  const mockSuggestedReplies: Record<string, SuggestedReply> = {
-    professional: {
-      tone: 'professional',
-      content: 'Thank you for your email. I appreciate the information and will review it shortly. I will follow up with you within 24 hours.',
-    },
-    friendly: {
-      tone: 'friendly',
-      content: 'Hey! Thanks so much for reaching out. I really appreciate this. Let me look into it and I\'ll get back to you soon!',
-    },
-    concise: {
-      tone: 'concise',
-      content: 'Thanks for the email. Will respond shortly.',
-    },
-    detailed: {
-      tone: 'detailed',
-      content: 'Thank you for taking the time to send this message. I have carefully reviewed your email and understand the key points you\'ve raised. I would like to provide a comprehensive response, so I will conduct a thorough analysis and follow up with you within 24 hours with detailed insights.',
-    },
+  const generateSuggestedReply = async (tone: 'professional' | 'friendly' | 'concise' | 'detailed') => {
+    setIsGenerating(true)
+    try {
+      const response = await fetch('/api/ai/suggest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          subject: email.subject,
+          body: email.body,
+          from: email.from,
+          tone: tone,
+        }),
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setSuggestedReplyContent(result.suggestion)
+      } else {
+        console.error('Failed to generate reply suggestion')
+      }
+    } catch (error) {
+      console.error('Error generating reply:', error)
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleToneChange = async (tone: 'professional' | 'friendly' | 'concise' | 'detailed') => {
+    setSuggestedReplyTone(tone)
+    await generateSuggestedReply(tone)
+  }
+
+  const handleUseSuggestedReply = () => {
+    if (suggestedReplyContent) {
+      // This could trigger a compose modal or redirect to compose page with pre-filled content
+      // For now, we'll just copy to clipboard
+      navigator.clipboard.writeText(suggestedReplyContent).then(() => {
+        alert('Suggested reply copied to clipboard!')
+      })
+    }
   }
 
   return (
@@ -153,7 +181,8 @@ export function AIAnalysisPanel({ email }: AIAnalysisPanelProps) {
                   key={tone}
                   variant={suggestedReplyTone === tone ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setSuggestedReplyTone(tone)}
+                  onClick={() => handleToneChange(tone)}
+                  disabled={isGenerating}
                   className="capitalize"
                 >
                   {tone}
@@ -161,15 +190,35 @@ export function AIAnalysisPanel({ email }: AIAnalysisPanelProps) {
               ))}
             </div>
 
-            <div className="bg-gray-50 p-3 rounded border border-gray-200">
-              <p className="text-sm text-gray-700">
-                {mockSuggestedReplies[suggestedReplyTone]?.content}
-              </p>
-            </div>
+            {isGenerating && (
+              <div className="flex items-center justify-center p-4 bg-gray-50 rounded border border-gray-200">
+                <Loader2 className="w-5 h-5 animate-spin text-blue-600 mr-2" />
+                <p className="text-sm text-gray-600">Generating suggestion...</p>
+              </div>
+            )}
 
-            <Button className="w-full bg-blue-600 hover:bg-blue-700">
-              Use This Reply
-            </Button>
+            {!isGenerating && suggestedReplyContent && (
+              <>
+                <div className="bg-gray-50 p-3 rounded border border-gray-200">
+                  <p className="text-sm text-gray-700">
+                    {suggestedReplyContent}
+                  </p>
+                </div>
+
+                <Button
+                  onClick={handleUseSuggestedReply}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                >
+                  Copy Reply
+                </Button>
+              </>
+            )}
+
+            {!isGenerating && !suggestedReplyContent && (
+              <p className="text-sm text-gray-600 text-center p-4">
+                Click a tone button to generate a suggested reply
+              </p>
+            )}
           </CardContent>
         )}
       </Card>

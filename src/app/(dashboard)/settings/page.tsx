@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -14,14 +15,58 @@ import {
 } from '@/components/ui/select'
 import { Bell, Lock, Zap, Sliders, LogOut, AlertCircle } from 'lucide-react'
 
+interface UserInfo {
+  name: string
+  email: string
+  picture?: string
+}
+
 export default function SettingsPage() {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState('general')
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const [notificationSettings, setNotificationSettings] = useState({
     newEmails: true,
     urgentOnly: false,
     weeklyDigest: true,
     soundEnabled: true,
   })
+
+  useEffect(() => {
+    async function fetchUserInfo() {
+      try {
+        const response = await fetch('/api/auth/me')
+        if (response.ok) {
+          const data = await response.json()
+          setUserInfo(data)
+        } else if (response.status === 401) {
+          router.push('/login')
+        }
+      } catch (error) {
+        console.error('Failed to fetch user info:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchUserInfo()
+  }, [router])
+
+  const handleSignOut = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+      router.push('/login')
+    } catch (error) {
+      console.error('Sign out error:', error)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+      await handleSignOut()
+    }
+  }
 
   const tabs = [
     { id: 'general', label: 'General', icon: Sliders },
@@ -70,14 +115,14 @@ export default function SettingsPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Full Name
                 </label>
-                <Input defaultValue="John Doe" />
+                <Input value={userInfo?.name || ''} disabled />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email Address
                 </label>
-                <Input defaultValue="john.doe@company.com" disabled />
+                <Input value={userInfo?.email || ''} disabled />
               </div>
 
               <div>
@@ -126,7 +171,7 @@ export default function SettingsPage() {
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <div>
-                  <p className="font-medium text-gray-900">john.doe@company.com</p>
+                  <p className="font-medium text-gray-900">{userInfo?.email || 'user@example.com'}</p>
                   <p className="text-sm text-gray-600">Primary Account</p>
                 </div>
                 <Badge variant="default">Connected</Badge>
@@ -305,19 +350,17 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Learning Model</CardTitle>
-              <CardDescription>Your AI learns from your actions</CardDescription>
+              <CardDescription>AI learning status and configuration</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <div>
-                  <p className="font-medium text-blue-900">Model Status</p>
+                  <p className="font-medium text-blue-900">Anthropic API</p>
                   <p className="text-sm text-blue-800 mt-1">
-                    Your personal AI model is being trained (45% complete)
+                    Connected
                   </p>
                 </div>
-                <div className="w-32 bg-blue-200 rounded-full h-2">
-                  <div className="bg-blue-600 h-2 rounded-full" style={{ width: '45%' }} />
-                </div>
+                <Badge variant="default" className="bg-green-600">Connected</Badge>
               </div>
             </CardContent>
           </Card>
@@ -329,47 +372,25 @@ export default function SettingsPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Password</CardTitle>
+              <CardTitle>Authentication</CardTitle>
+              <CardDescription>Your account uses Google OAuth for secure authentication</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Current Password
-                </label>
-                <Input type="password" />
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <p className="font-medium text-green-900 mb-2">Secure Authentication Active</p>
+                <p className="text-sm text-green-800 mb-3">
+                  Your account is protected by Google's OAuth 2.0 authentication
+                </p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  New Password
-                </label>
-                <Input type="password" />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Confirm Password
-                </label>
-                <Input type="password" />
-              </div>
-
-              <Button className="bg-blue-600 hover:bg-blue-700">Update Password</Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Two-Factor Authentication</CardTitle>
-              <CardDescription>Add an extra layer of security</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div>
-                  <p className="font-medium text-gray-900">Status</p>
-                  <p className="text-sm text-gray-600 mt-1">Two-factor authentication is disabled</p>
-                </div>
-                <Button className="bg-blue-600 hover:bg-blue-700">Enable</Button>
-              </div>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleSignOut}
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </Button>
             </CardContent>
           </Card>
 
@@ -386,7 +407,9 @@ export default function SettingsPage() {
                 <p className="text-sm text-red-800 mb-3">
                   Permanently delete your account and all associated data
                 </p>
-                <Button variant="destructive">Delete Account</Button>
+                <Button variant="destructive" onClick={handleDeleteAccount}>
+                  Delete Account
+                </Button>
               </div>
             </CardContent>
           </Card>

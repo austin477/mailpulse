@@ -3,11 +3,15 @@ import { GmailClient } from '@/lib/gmail/client'
 
 export async function POST(request: NextRequest) {
   try {
-    const { accessToken, refreshToken, to, subject, body } = await request.json()
+    // Read tokens from cookies
+    const accessToken = request.cookies.get('access_token')?.value
+    const refreshToken = request.cookies.get('refresh_token')?.value
+
+    const { to, cc, subject, body } = await request.json()
 
     if (!accessToken || !to || !subject || !body) {
       return NextResponse.json(
-        { error: 'Missing required parameters' },
+        { error: 'Missing required parameters or authentication' },
         { status: 400 }
       )
     }
