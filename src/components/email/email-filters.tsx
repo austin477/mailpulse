@@ -50,14 +50,14 @@ export function EmailFilters() {
         </Select>
 
         <Select
-          value={categoryFilter || ''}
-          onValueChange={(value) => setCategoryFilter(value || null)}
+          value={categoryFilter || 'all'}
+          onValueChange={(value) => setCategoryFilter(value === 'all' ? null : value)}
         >
           <SelectTrigger>
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Categories</SelectItem>
+            <SelectItem value="all">All Categories</SelectItem>
             <SelectItem value="work">Work</SelectItem>
             <SelectItem value="personal">Personal</SelectItem>
             <SelectItem value="sales">Sales</SelectItem>
@@ -66,14 +66,14 @@ export function EmailFilters() {
         </Select>
 
         <Select
-          value={priorityFilter || ''}
-          onValueChange={(value) => setPriorityFilter(value || null)}
+          value={priorityFilter || 'all'}
+          onValueChange={(value) => setPriorityFilter(value === 'all' ? null : value)}
         >
           <SelectTrigger>
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Priorities</SelectItem>
+            <SelectItem value="all">All Priorities</SelectItem>
             <SelectItem value="critical">Critical</SelectItem>
             <SelectItem value="high">High</SelectItem>
             <SelectItem value="medium">Medium</SelectItem>
@@ -82,14 +82,14 @@ export function EmailFilters() {
         </Select>
 
         <Select
-          value={sentimentFilter || ''}
-          onValueChange={(value) => setSentimentFilter(value || null)}
+          value={sentimentFilter || 'all'}
+          onValueChange={(value) => setSentimentFilter(value === 'all' ? null : value)}
         >
           <SelectTrigger>
             <SelectValue placeholder="Sentiment" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Sentiments</SelectItem>
+            <SelectItem value="all">All Sentiments</SelectItem>
             <SelectItem value="positive">Positive</SelectItem>
             <SelectItem value="neutral">Neutral</SelectItem>
             <SelectItem value="negative">Negative</SelectItem>
