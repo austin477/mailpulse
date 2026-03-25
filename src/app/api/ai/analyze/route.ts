@@ -1,7 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { analyzeEmail } from '@/lib/ai/claude'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
+  const accessToken = request.cookies.get('access_token')?.value
+  if (!accessToken) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+  }
+
+  // Rate limit: 20 analyses per minute per user
+  const { allowed, remaining, resetIn } = rateLimit(`analyze:${accessToken.slice(-10)}`, 20, 60000)
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded. Try again shortly.' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(resetIn / 1000)) } }
+    )
+  }
+
   try {
     const { subject, body, from } = await request.json()
 
@@ -12,7 +27,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const analysis = await analyzeEmail(subject, body, from)
+    // Limit input sizes to prevent abuse
+    const truncatedBody = body.slice(0, 10000)
+    const truncatedSubject = subject.slice(0, 500)
+
+    const analysis = await analyzeEmail(truncatedSubject, truncatedBody, from)
 
     return NextResponse.json({
       success: true,

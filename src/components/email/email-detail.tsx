@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import DOMPurify from 'dompurify'
 import { Email } from '@/types/email'
 import { formatDateFull, getInitials } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -52,6 +53,19 @@ export function EmailDetail({
   const [isSending, setIsSending] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  const sanitizedHtml = useMemo(() => {
+    const raw = email.htmlBody || email.body
+    if (!raw) return ''
+    return DOMPurify.sanitize(raw, {
+      ALLOWED_TAGS: ['p', 'br', 'b', 'i', 'u', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code', 'span', 'div', 'table', 'thead', 'tbody', 'tr', 'td', 'th', 'img', 'hr'],
+      ALLOWED_ATTR: ['href', 'src', 'alt', 'style', 'class', 'target', 'width', 'height'],
+      ALLOW_DATA_ATTR: false,
+      ADD_ATTR: ['target'],
+      FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'textarea', 'select', 'button'],
+      FORBID_ATTR: ['onerror', 'onclick', 'onload', 'onmouseover', 'onfocus', 'onblur'],
+    })
+  }, [email.htmlBody, email.body])
 
   const extractName = (emailStr: string) => {
     const match = emailStr.match(/^(.+?)(?:\+|@|<)/)
@@ -276,7 +290,7 @@ export function EmailDetail({
             <div
               className="text-gray-900 whitespace-pre-wrap"
               dangerouslySetInnerHTML={{
-                __html: email.htmlBody || email.body,
+                __html: sanitizedHtml,
               }}
             />
           </div>

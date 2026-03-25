@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   const accessToken = request.cookies.get('access_token')?.value
   if (!accessToken) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+  }
+
+  // Rate limit: 10 enhancements per minute per user
+  const { allowed, resetIn } = rateLimit(`enhance:${accessToken.slice(-10)}`, 10, 60000)
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded. Try again shortly.' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(resetIn / 1000)) } }
+    )
   }
 
   try {
@@ -13,12 +23,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing body text' }, { status: 400 })
     }
 
+    // Limit input size
+    const truncatedBody = body.slice(0, 10000)
+
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) {
       // Fallback: basic enhancement without AI
       return NextResponse.json({
-        enhanced: body.charAt(0).toUpperCase() + body.slice(1) +
-          (body.endsWith('.') ? '' : '.') +
+        enhanced: truncatedBody.charAt(0).toUpperCase() + truncatedBody.slice(1) +
+          (truncatedBody.endsWith('.') ? '' : '.') +
           '\n\nBest regards',
         tone: tone || 'professional',
       })
@@ -46,7 +59,7 @@ export async function POST(request: NextRequest) {
         messages: [
           {
             role: 'user',
-            content: `${instruction}\n\nOriginal email:\n${body}\n\nProvide ONLY the rewritten email text, no explanations or commentary.`,
+            content: `${instruction}\n\nOriginal email:\n${truncatedBody}\n\nProvide ONLY the rewritten email text, no explanations or commentary.`,
           },
         ],
       }),

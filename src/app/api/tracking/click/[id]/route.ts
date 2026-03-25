@@ -1,11 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Allowlist of domains we permit redirects to
+const ALLOWED_DOMAINS = [
+  'mailpulse-iota.vercel.app',
+  'usawholesalesupplies.com',
+  'stablestorefronts.com',
+  'google.com',
+  'gmail.com',
+]
+
+function isAllowedUrl(urlStr: string): boolean {
+  try {
+    const parsed = new URL(urlStr)
+    // Only allow https
+    if (parsed.protocol !== 'https:') return false
+    // Check if domain or a subdomain of an allowed domain
+    return ALLOWED_DOMAINS.some(
+      (domain) => parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`)
+    )
+  } catch {
+    return false
+  }
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const { id } = params
+    const accessToken = request.cookies.get('access_token')?.value
+
+    if (!accessToken) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    }
+
     const url = request.nextUrl.searchParams.get('url')
 
     if (!url) {
@@ -15,12 +44,16 @@ export async function GET(
       )
     }
 
-    // In a real application, you would:
-    // 1. Log this click to a database
-    // 2. Record timestamp, user agent, IP
-    // 3. Associate with email and recipient
+    if (!isAllowedUrl(url)) {
+      return NextResponse.json(
+        { error: 'URL not allowed' },
+        { status: 403 }
+      )
+    }
 
-    // Redirect to the original URL
+    // TODO: Log click to database for tracking analytics
+    // Record: tracking ID, timestamp, user agent, associated email
+
     return NextResponse.redirect(url, { status: 302 })
   } catch (error) {
     console.error('Link tracking error:', error)
