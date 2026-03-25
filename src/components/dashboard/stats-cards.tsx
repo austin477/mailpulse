@@ -1,12 +1,38 @@
 'use client'
 
 import { Card, CardContent } from '@/components/ui/card'
-import {
-  Mail,
-  AlertCircle,
-  Clock,
-  TrendingUp,
-} from 'lucide-react'
+import { LucideIcon } from 'lucide-react'
+
+interface StatCardProps {
+  title: string
+  value: string | number
+  icon: LucideIcon
+  iconBg: string
+  iconColor: string
+  badge?: string
+  badgeColor?: string
+}
+
+export function StatCard({ title, value, icon: Icon, iconBg, iconColor, badge, badgeColor }: StatCardProps) {
+  return (
+    <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div className={`w-10 h-10 ${iconBg} rounded-lg flex items-center justify-center`}>
+            <Icon className={`w-5 h-5 ${iconColor}`} />
+          </div>
+          {badge && (
+            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badgeColor || 'bg-gray-100 text-gray-600'}`}>
+              {badge}
+            </span>
+          )}
+        </div>
+        <p className="text-sm text-gray-500 mb-0.5">{title}</p>
+        <p className="text-2xl font-bold text-gray-900">{value}</p>
+      </CardContent>
+    </Card>
+  )
+}
 
 interface StatsCardsProps {
   totalEmails: number
@@ -15,12 +41,7 @@ interface StatsCardsProps {
   readRate: number
 }
 
-export function StatsCards({
-  totalEmails,
-  unreadEmails,
-  avgResponseTime,
-  readRate,
-}: StatsCardsProps) {
+export function StatsCards({ totalEmails, unreadEmails, avgResponseTime, readRate }: StatsCardsProps) {
   const formatResponseTime = (hours: number) => {
     if (hours === 0) return 'N/A'
     if (hours < 1) return `${Math.round(hours * 60)}m`
@@ -28,51 +49,12 @@ export function StatsCards({
     return `${(hours / 24).toFixed(1)}d`
   }
 
-  const stats = [
-    {
-      title: 'Total Emails',
-      value: totalEmails.toLocaleString(),
-      icon: Mail,
-      color: 'bg-blue-100 text-blue-600',
-    },
-    {
-      title: 'Unread',
-      value: unreadEmails,
-      icon: AlertCircle,
-      color: 'bg-red-100 text-red-600',
-    },
-    {
-      title: 'Avg Response Time',
-      value: formatResponseTime(avgResponseTime),
-      icon: Clock,
-      color: 'bg-orange-100 text-orange-600',
-    },
-    {
-      title: 'Read Rate',
-      value: `${readRate}%`,
-      icon: TrendingUp,
-      color: 'bg-green-100 text-green-600',
-    },
-  ]
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {stats.map((stat, i) => {
-        const Icon = stat.icon
-        return (
-          <Card key={i} className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className={`p-3 rounded-lg ${stat.color}`}>
-                  <Icon className="w-6 h-6" />
-                </div>
-              </div>
-              <p className="text-gray-600 text-sm mb-1">{stat.title}</p>
-              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-            </CardContent>
-          </Card>
-        )
-      })}
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <StatCard title="Total Emails" value={totalEmails.toLocaleString()} icon={require('lucide-react').Inbox} iconBg="bg-blue-50" iconColor="text-blue-600" />
+      <StatCard title="Unread" value={unreadEmails} icon={require('lucide-react').Mail} iconBg="bg-red-50" iconColor="text-red-500" />
+      <StatCard title="Avg Response" value={formatResponseTime(avgResponseTime)} icon={require('lucide-react').Clock} iconBg="bg-amber-50" iconColor="text-amber-500" />
+      <StatCard title="Read Rate" value={`${readRate}%`} icon={require('lucide-react').TrendingUp} iconBg="bg-green-50" iconColor="text-green-500" />
     </div>
   )
 }
