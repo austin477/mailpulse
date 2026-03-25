@@ -6,13 +6,23 @@ import { EmailListItem, EmailListSkeleton } from './email-list-item'
 import { EmailFilters } from './email-filters'
 import { useEmailStore } from '@/stores/email-store'
 import { Button } from '@/components/ui/button'
-import { Archive, Trash2, Tag } from 'lucide-react'
+import { Archive, Trash2, Tag, Mail, MailOpen, Loader2 } from 'lucide-react'
 
 interface EmailListProps {
   emails: Email[]
   selectedEmail?: Email | null
   onSelectEmail: (email: Email) => void
   isLoading?: boolean
+}
+
+async function performBulkAction(action: string, messageIds: string[]) {
+  const res = await fetch('/api/gmail/actions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, messageIds }),
+  })
+  if (!res.ok) throw new Error(`Bulk action failed: ${action}`)
+  return res.json()
 }
 
 export function EmailList({
@@ -22,7 +32,9 @@ export function EmailList({
   isLoading = false,
 }: EmailListProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkLoading, setBulkLoading] = useState<string | null>(null)
   const bulkUpdateEmails = useEmailStore((state) => state.bulkUpdateEmails)
+  const deleteEmail = useEmailStore((state) => state.deleteEmail)
 
   const handleSelectEmail = (id: string) => {
     setSelectedIds((prev) => {
@@ -44,9 +56,60 @@ export function EmailList({
     }
   }
 
-  const handleBulkArchive = () => {
-    bulkUpdateEmails(Array.from(selectedIds), { isDraft: false })
-    setSelectedIds(new Set())
+  const handleBulkArchive = async () => {
+    const ids = Array.from(selectedIds)
+    setBulkLoading('archive')
+    try {
+      await performBulkAction('archive', ids)
+      ids.forEach(id => deleteEmail(id))
+      setSelectedIds(new Set())
+    } catch (err) {
+      console.error('Bulk archive error:', err)
+    } finally {
+      setBulkLoading(null)
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds)
+    setBulkLoading('delete')
+    try {
+      await performBulkAction('trash', ids)
+      ids.forEach(id => deleteEmail(id))
+      setSelectedIds(new Set())
+    } catch (err) {
+      console.error('Bulk delete error:', err)
+    } finally {
+      setBulkLoading(null)
+    }
+  }
+
+  const handleBulkRead = async () => {
+    const ids = Array.from(selectedIds)
+    setBulkLoading('read')
+    try {
+      await performBulkAction('read', ids)
+      bulkUpdateEmails(ids, { isRead: true })
+      setSelectedIds(new Set())
+    } catch (err) {
+      console.error('Bulk read error:', err)
+    } finally {
+      setBulkLoading(null)
+    }
+  }
+
+  const handleBulkUnread = async () => {
+    const ids = Array.from(selectedIds)
+    setBulkLoading('unread')
+    try {
+      await performBulkAction('unread', ids)
+      bulkUpdateEmails(ids, { isRead: false })
+      setSelectedIds(new Set())
+    } catch (err) {
+      console.error('Bulk unread error:', err)
+    } finally {
+      setBulkLoading(null)
+    }
   }
 
   return (
@@ -58,30 +121,61 @@ export function EmailList({
           <span className="text-sm font-medium text-gray-900">
             {selectedIds.size} selected
           </span>
-          <div className="flex gap-2">
+          <div className="flex gap-1">
             <Button
               variant="ghost"
               size="sm"
               onClick={handleBulkArchive}
+              disabled={!!bulkLoading}
               className="text-gray-700 hover:bg-blue-100"
             >
-              <Archive className="w-4 h-4 mr-1" />
+              {bulkLoading === 'archive' ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <Archive className="w-4 h-4 mr-1" />
+              )}
               Archive
             </Button>
             <Button
               variant="ghost"
               size="sm"
+              onClick={handleBulkRead}
+              disabled={!!bulkLoading}
               className="text-gray-700 hover:bg-blue-100"
             >
-              <Tag className="w-4 h-4 mr-1" />
-              Tag
+              {bulkLoading === 'read' ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <MailOpen className="w-4 h-4 mr-1" />
+              )}
+              Read
             </Button>
             <Button
               variant="ghost"
               size="sm"
+              onClick={handleBulkUnread}
+              disabled={!!bulkLoading}
+              className="text-gray-700 hover:bg-blue-100"
+            >
+              {bulkLoading === 'unread' ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <Mail className="w-4 h-4 mr-1" />
+              )}
+              Unread
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBulkDelete}
+              disabled={!!bulkLoading}
               className="text-red-600 hover:bg-red-100"
             >
-              <Trash2 className="w-4 h-4 mr-1" />
+              {bulkLoading === 'delete' ? (
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4 mr-1" />
+              )}
               Delete
             </Button>
           </div>

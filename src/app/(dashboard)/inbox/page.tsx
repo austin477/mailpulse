@@ -15,6 +15,7 @@ export default function InboxPage() {
   const setEmails = useEmailStore((state) => state.setEmails)
   const emails = useEmailStore((state) => state.emails)
   const filteredEmails = useEmailStore((state) => state.filteredEmails)
+  const removeEmail = useEmailStore((state) => state.deleteEmail)
 
   useEffect(() => {
     async function fetchEmails() {
@@ -78,6 +79,22 @@ export default function InboxPage() {
 
   const displayEmails = filteredEmails.length > 0 ? filteredEmails : emails
 
+  const handleArchive = () => {
+    if (selectedEmail) {
+      removeEmail(selectedEmail.id)
+      const remaining = displayEmails.filter(e => e.id !== selectedEmail.id)
+      setSelectedEmail(remaining.length > 0 ? remaining[0] : null)
+    }
+  }
+
+  const handleDelete = () => {
+    if (selectedEmail) {
+      removeEmail(selectedEmail.id)
+      const remaining = displayEmails.filter(e => e.id !== selectedEmail.id)
+      setSelectedEmail(remaining.length > 0 ? remaining[0] : null)
+    }
+  }
+
   return (
     <div className="h-[calc(100vh-4rem)] flex gap-0 bg-white">
       {/* Email List */}
@@ -94,12 +111,8 @@ export default function InboxPage() {
         {selectedEmail ? (
           <EmailDetail
             email={selectedEmail}
-            onArchive={() => {
-              setSelectedEmail(null)
-            }}
-            onDelete={() => {
-              setSelectedEmail(null)
-            }}
+            onArchive={handleArchive}
+            onDelete={handleDelete}
           />
         ) : (
           <div className="flex items-center justify-center h-full text-gray-500">

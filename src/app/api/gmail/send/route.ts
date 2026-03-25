@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     const gmail = new GmailClient({
       accessToken,
       refreshToken,
-      clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+      clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     })
 
