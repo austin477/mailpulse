@@ -121,9 +121,9 @@ export function AIAnalysisPanel({ email, onUseReply }: AIAnalysisPanelProps) {
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-3 space-y-3">
       {/* TLDR Summary */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-100">
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="w-4 h-4 text-blue-600" />
           <h3 className="text-sm font-semibold text-blue-900">AI Summary</h3>
@@ -198,9 +198,9 @@ export function AIAnalysisPanel({ email, onUseReply }: AIAnalysisPanelProps) {
       </div>
 
       {/* Smart Reply */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="p-4 border-b border-gray-100">
-          <div className="flex items-center gap-2 mb-3">
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="p-3 border-b border-gray-100">
+          <div className="flex items-center gap-2 mb-2">
             <MessageSquare className="w-4 h-4 text-indigo-500" />
             <h3 className="text-sm font-semibold text-gray-900">Smart Reply</h3>
           </div>

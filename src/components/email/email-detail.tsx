@@ -20,6 +20,22 @@ import {
 } from 'lucide-react'
 import { AIAnalysisPanel } from '@/components/ai/ai-analysis-panel'
 
+// Color palette for avatars (matches email-list-item)
+const AVATAR_COLORS = [
+  'bg-red-500', 'bg-orange-500', 'bg-amber-500', 'bg-yellow-500',
+  'bg-green-500', 'bg-emerald-500', 'bg-teal-500', 'bg-cyan-500',
+  'bg-blue-500', 'bg-indigo-500', 'bg-purple-500', 'bg-pink-500',
+]
+
+function getAvatarColor(email: string): string {
+  let hash = 0
+  for (let i = 0; i < email.length; i++) {
+    hash = ((hash << 5) - hash) + email.charCodeAt(i)
+    hash = hash & hash
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
+}
+
 interface EmailDetailProps {
   email: Email
   onReply?: () => void
@@ -203,16 +219,16 @@ export function EmailDetail({
         </div>
       )}
 
-      <div className="border-b border-gray-200 p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-start gap-3">
-            <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center text-sm font-bold">
+      <div className="border-b border-gray-200 px-6 py-4 flex-shrink-0">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className={`w-10 h-10 ${getAvatarColor(email.from)} rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0`}>
               {getInitials(extractName(email.from))}
             </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-900">{extractName(email.from)}</h3>
-              <p className="text-sm text-gray-600">{email.from}</p>
-              <p className="text-xs text-gray-500 mt-1">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-gray-900 text-sm">{extractName(email.from)}</h3>
+              <p className="text-xs text-gray-500 truncate">{email.from}</p>
+              <p className="text-xs text-gray-400 mt-0.5">
                 {formatDateFull(email.timestamp)}
               </p>
             </div>
@@ -260,7 +276,7 @@ export function EmailDetail({
           </div>
         </div>
 
-        <h2 className="text-xl font-bold text-gray-900 mb-3">{email.subject}</h2>
+        <h2 className="text-lg font-bold text-gray-900 mb-2">{email.subject}</h2>
 
         <div className="flex flex-wrap gap-2">
           {email.priority && email.priority !== 'medium' && (
@@ -284,11 +300,12 @@ export function EmailDetail({
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6 flex-1 overflow-auto">
-        <div className="col-span-2 border-r border-gray-200 p-6">
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex-1 min-w-0 border-r border-gray-200 p-6 overflow-y-auto">
           <div className="prose prose-sm max-w-none">
             <div
-              className="text-gray-900 whitespace-pre-wrap"
+              className="text-gray-900 whitespace-pre-wrap break-words overflow-wrap-anywhere"
+              style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
               dangerouslySetInnerHTML={{
                 __html: sanitizedHtml,
               }}
@@ -401,7 +418,7 @@ export function EmailDetail({
           )}
         </div>
 
-        <div className="overflow-y-auto">
+        <div className="w-[320px] min-w-[280px] flex-shrink-0 overflow-y-auto bg-gray-50">
           <AIAnalysisPanel email={email} />
         </div>
       </div>
